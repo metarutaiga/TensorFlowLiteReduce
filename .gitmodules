@@ -1,0 +1,24 @@
+[submodule "third_party/eigen"]
+	path = third_party/eigen
+	url = https://gitlab.com/libeigen/eigen
+[submodule "third_party/farmhash"]
+	path = third_party/farmhash
+	url = https://github.com/google/farmhash
+[submodule "third_party/flatbuffers"]
+	path = third_party/flatbuffers
+	url = https://github.com/google/flatbuffers
+[submodule "third_party/FP16"]
+	path = third_party/FP16
+	url = https://github.com/Maratyszcza/FP16
+[submodule "third_party/gemmlowp"]
+	path = third_party/gemmlowp
+	url = https://github.com/google/gemmlowp
+[submodule "third_party/pthreadpool"]
+	path = third_party/pthreadpool
+	url = https://github.com/Maratyszcza/pthreadpool
+[submodule "third_party/ruy"]
+	path = third_party/ruy
+	url = https://github.com/google/ruy
+[submodule "third_party/XNNPACK"]
+	path = third_party/XNNPACK
+	url = https://github.com/google/XNNPACK
