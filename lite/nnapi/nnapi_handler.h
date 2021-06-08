@@ -15,7 +15,6 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_NNAPI_NNAPI_HANDLER_H_
 #define TENSORFLOW_LITE_NNAPI_NNAPI_HANDLER_H_
 
-#include "tensorflow/core/platform/logging.h"
 #include "tensorflow/lite/nnapi/NeuralNetworksTypes.h"
 #include "tensorflow/lite/nnapi/nnapi_implementation.h"
 
@@ -301,7 +300,7 @@ class NnApiHandler {
   const NnApi* GetNnApi() { return nnapi_; }
 
  protected:
-  explicit NnApiHandler(NnApi* nnapi) : nnapi_(nnapi) { DCHECK(nnapi); }
+  explicit NnApiHandler(NnApi* nnapi) : nnapi_(nnapi) {}
 
   NnApi* nnapi_;
 

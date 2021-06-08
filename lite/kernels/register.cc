@@ -333,10 +333,12 @@ BuiltinOpResolver::BuiltinOpResolver() {
 OpResolver::TfLiteDelegatePtrVector BuiltinOpResolver::GetDelegates(
     int num_threads) const {
   OpResolver::TfLiteDelegatePtrVector delegates;
+#if 0
   auto xnnpack_delegate = tflite::MaybeCreateXNNPACKDelegate(num_threads);
   if (xnnpack_delegate != nullptr) {
     delegates.push_back(std::move(xnnpack_delegate));
   }
+#endif
   return delegates;
 }
 
