@@ -191,8 +191,8 @@ NSURL* createTemporaryFile() {
   }
   // Flush data to file.
   // TODO(karimnosseir): Can we mmap this instead of actual writing it to phone ?
-  std::ofstream file_stream([modelPath UTF8String], std::ios::out | std::ios::binary);
-  model->SerializeToOstream(&file_stream);
+  // std::ofstream file_stream([modelPath UTF8String], std::ios::out | std::ios::binary);
+  // model->SerializeToOstream(&file_stream);
   return modelUrl;
 }
 
