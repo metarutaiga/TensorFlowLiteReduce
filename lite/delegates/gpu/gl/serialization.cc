@@ -121,111 +121,111 @@ struct ParameterValueGetter {
 
 struct DataVariantTypeGetter {
   data::DataVariant operator()(int32_t) const {
-    return data::DataVariant::DataInt32;
+    return data::DataVariant_DataInt32;
   }
 
   data::DataVariant operator()(const int2&) const {
-    return data::DataVariant::DataInt32;
+    return data::DataVariant_DataInt32;
   }
 
   data::DataVariant operator()(const int4&) const {
-    return data::DataVariant::DataInt32;
+    return data::DataVariant_DataInt32;
   }
 
   data::DataVariant operator()(const std::vector<int2>&) const {
-    return data::DataVariant::DataInt32;
+    return data::DataVariant_DataInt32;
   }
 
   data::DataVariant operator()(uint32_t) const {
-    return data::DataVariant::DataUint32;
+    return data::DataVariant_DataUint32;
   }
 
   data::DataVariant operator()(const uint4&) const {
-    return data::DataVariant::DataUint32;
+    return data::DataVariant_DataUint32;
   }
 
   data::DataVariant operator()(float) const {
-    return data::DataVariant::DataFloat;
+    return data::DataVariant_DataFloat;
   }
 
   data::DataVariant operator()(const float2&) const {
-    return data::DataVariant::DataFloat;
+    return data::DataVariant_DataFloat;
   }
 
   data::DataVariant operator()(const float4&) const {
-    return data::DataVariant::DataFloat;
+    return data::DataVariant_DataFloat;
   }
 
   data::DataVariant operator()(const std::vector<float4>&) const {
-    return data::DataVariant::DataFloat;
+    return data::DataVariant_DataFloat;
   }
 };
 
 struct ParameterTypeGetter {
   data::ParameterType operator()(int32_t) const {
-    return data::ParameterType::INT32;
+    return data::ParameterType_INT32;
   }
 
   data::ParameterType operator()(const int2&) const {
-    return data::ParameterType::INT32;
+    return data::ParameterType_INT32;
   }
 
   data::ParameterType operator()(const int4&) const {
-    return data::ParameterType::INT32;
+    return data::ParameterType_INT32;
   }
 
   data::ParameterType operator()(const std::vector<int2>&) const {
-    return data::ParameterType::INT32_2;
+    return data::ParameterType_INT32_2;
   }
 
   data::ParameterType operator()(uint32_t) const {
-    return data::ParameterType::UINT32;
+    return data::ParameterType_UINT32;
   }
 
   data::ParameterType operator()(const uint4&) const {
-    return data::ParameterType::UINT32;
+    return data::ParameterType_UINT32;
   }
 
   data::ParameterType operator()(float) const {
-    return data::ParameterType::FLOAT32;
+    return data::ParameterType_FLOAT32;
   }
 
   data::ParameterType operator()(const float2&) const {
-    return data::ParameterType::FLOAT32;
+    return data::ParameterType_FLOAT32;
   }
 
   data::ParameterType operator()(const float4&) const {
-    return data::ParameterType::FLOAT32;
+    return data::ParameterType_FLOAT32;
   }
 
   data::ParameterType operator()(const std::vector<float4>&) const {
-    return data::ParameterType::FLOAT32;
+    return data::ParameterType_FLOAT32;
   }
 };
 
 data::DataType ToFB(DataType type) {
   switch (type) {
     case DataType::INT16:
-      return data::DataType::INT16;
+      return data::DataType_INT16;
     case DataType::INT32:
-      return data::DataType::INT32;
+      return data::DataType_INT32;
     case DataType::FLOAT16:
-      return data::DataType::FLOAT16;
+      return data::DataType_FLOAT16;
     case DataType::FLOAT32:
-      return data::DataType::FLOAT32;
+      return data::DataType_FLOAT32;
     default:
-      return data::DataType::UNKNOWN;
+      return data::DataType_UNKNOWN;
   }
 }
 
 data::ObjectType ToFB(ObjectType type) {
   switch (type) {
     case ObjectType::TEXTURE:
-      return data::ObjectType::TEXTURE;
+      return data::ObjectType_TEXTURE;
     case ObjectType::BUFFER:
-      return data::ObjectType::BUFFER;
+      return data::ObjectType_BUFFER;
     default:
-      return data::ObjectType::UNKNOWN;
+      return data::ObjectType_UNKNOWN;
   }
 }
 
@@ -254,13 +254,13 @@ struct ObjectSizeGetter {
 
 struct ObjectSizeTypeGetter {
   data::ObjectSize operator()(const uint3&) const {
-    return data::ObjectSize::Uint3;
+    return data::ObjectSize_Uint3;
   }
   data::ObjectSize operator()(const uint2&) const {
-    return data::ObjectSize::Uint2;
+    return data::ObjectSize_Uint2;
   }
   data::ObjectSize operator()(const uint32_t&) const {
-    return data::ObjectSize::Uint1;
+    return data::ObjectSize_Uint1;
   }
 };
 
@@ -282,21 +282,21 @@ struct ObjectGetter {
 
 struct ObjectTypeGetter {
   data::ObjectVariant operator()(const ObjectData&) const {
-    return data::ObjectVariant::ObjectData;
+    return data::ObjectVariant_ObjectData;
   }
   data::ObjectVariant operator()(const ObjectRef&) const {
-    return data::ObjectVariant::ObjectRef;
+    return data::ObjectVariant_ObjectRef;
   }
 };
 
 data::AccessType ToFB(AccessType type) {
   switch (type) {
     case AccessType::READ:
-      return data::AccessType::READ;
+      return data::AccessType_READ;
     case AccessType::WRITE:
-      return data::AccessType::WRITE;
+      return data::AccessType_WRITE;
     case AccessType::READ_WRITE:
-      return data::AccessType::READ_WRITE;
+      return data::AccessType_READ_WRITE;
   }
 }
 
@@ -394,7 +394,7 @@ absl::Status ParseParameter(const data::UniformParameter& fb_parameter,
                             Variable* parameter) {
   parameter->name = fb_parameter.name()->str();
   switch (fb_parameter.type()) {
-    case data::ParameterType::INT32: {
+    case data::ParameterType_INT32: {
       auto* ptr = fb_parameter.data_as_DataInt32();
       if (ptr == nullptr) {
         return absl::InvalidArgumentError("Unexpected data type '" +
@@ -417,7 +417,7 @@ absl::Status ParseParameter(const data::UniformParameter& fb_parameter,
       }
       break;
     }
-    case data::ParameterType::UINT32: {
+    case data::ParameterType_UINT32: {
       auto* ptr = fb_parameter.data_as_DataUint32();
       if (ptr == nullptr) {
         return absl::InvalidArgumentError("Unexpected data type '" +
@@ -437,7 +437,7 @@ absl::Status ParseParameter(const data::UniformParameter& fb_parameter,
       }
       break;
     }
-    case data::ParameterType::FLOAT32: {
+    case data::ParameterType_FLOAT32: {
       auto* ptr = fb_parameter.data_as_DataFloat();
       if (ptr == nullptr) {
         return absl::InvalidArgumentError("Unexpected data type '" +
@@ -460,7 +460,7 @@ absl::Status ParseParameter(const data::UniformParameter& fb_parameter,
       }
       break;
     }
-    case data::ParameterType::INT32_2: {
+    case data::ParameterType_INT32_2: {
       auto* ptr = fb_parameter.data_as_DataInt32();
       if (ptr == nullptr) {
         return absl::InvalidArgumentError("Unexpected data type '" +
@@ -485,13 +485,13 @@ absl::Status ParseParameter(const data::UniformParameter& fb_parameter,
 
 DataType ToEnum(data::DataType type) {
   switch (type) {
-    case data::DataType::INT16:
+    case data::DataType_INT16:
       return DataType::INT16;
-    case data::DataType::INT32:
+    case data::DataType_INT32:
       return DataType::INT32;
-    case data::DataType::FLOAT16:
+    case data::DataType_FLOAT16:
       return DataType::FLOAT16;
-    case data::DataType::FLOAT32:
+    case data::DataType_FLOAT32:
       return DataType::FLOAT32;
     default:
       return DataType::UNKNOWN;
@@ -500,9 +500,9 @@ DataType ToEnum(data::DataType type) {
 
 ObjectType ToEnum(data::ObjectType type) {
   switch (type) {
-    case data::ObjectType::TEXTURE:
+    case data::ObjectType_TEXTURE:
       return ObjectType::TEXTURE;
-    case data::ObjectType::BUFFER:
+    case data::ObjectType_BUFFER:
       return ObjectType::BUFFER;
     default:
       return ObjectType::UNKNOWN;
@@ -511,11 +511,11 @@ ObjectType ToEnum(data::ObjectType type) {
 
 AccessType ToEnum(data::AccessType type) {
   switch (type) {
-    case data::AccessType::READ:
+    case data::AccessType_READ:
       return AccessType::READ;
-    case data::AccessType::WRITE:
+    case data::AccessType_WRITE:
       return AccessType::WRITE;
-    case data::AccessType::READ_WRITE:
+    case data::AccessType_READ_WRITE:
       return AccessType::READ_WRITE;
   }
 }
@@ -527,39 +527,39 @@ absl::Status ParseObject(const data::Object& fb_object, Object* object) {
   object->data_type = ToEnum(fb_object.data_type());
 
   switch (fb_object.size_type()) {
-    case data::ObjectSize::Uint3: {
+    case data::ObjectSize_Uint3: {
       auto* size = fb_object.size_as_Uint3();
       object->size = uint3(size->x(), size->y(), size->z());
       break;
     }
-    case data::ObjectSize::Uint2: {
+    case data::ObjectSize_Uint2: {
       auto* size = fb_object.size_as_Uint2();
       object->size = uint2(size->x(), size->y());
       break;
     }
-    case data::ObjectSize::Uint1: {
+    case data::ObjectSize_Uint1: {
       auto* size = fb_object.size_as_Uint1();
       object->size = size->x();
       break;
     }
-    case data::ObjectSize::NONE:
+    case data::ObjectSize_NONE:
       return absl::InvalidArgumentError("Texture size is not set");
   }
 
   switch (fb_object.object_type()) {
-    case data::ObjectVariant::ObjectData: {
+    case data::ObjectVariant_ObjectData: {
       auto* fb_data = fb_object.object_as_ObjectData();
       object->object = std::vector<uint8_t>(
           fb_data->data()->data(),
           fb_data->data()->data() + fb_data->data()->size());
       break;
     }
-    case data::ObjectVariant::ObjectRef: {
+    case data::ObjectVariant_ObjectRef: {
       auto* fb_ref = fb_object.object_as_ObjectRef();
       object->object = fb_ref->global_id();
       break;
     }
-    case data::ObjectVariant::NONE: {
+    case data::ObjectVariant_NONE: {
       return absl::InvalidArgumentError("Object is not set");
     }
   }

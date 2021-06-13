@@ -286,6 +286,7 @@ class DelegateKernel {
   absl::Status InitializeOpenClApi(GraphFloat32* graph,
                                    std::unique_ptr<InferenceBuilder>* builder,
                                    bool* graph_is_destroyed) {
+#if 0
     *graph_is_destroyed = false;
     cl::InferenceEnvironmentOptions env_options;
     cl::InferenceEnvironmentProperties properties;
@@ -313,6 +314,7 @@ class DelegateKernel {
         options, std::move(*graph), builder));
     TFLITE_LOG_PROD_ONCE(tflite::TFLITE_LOG_INFO,
                          "Initialized OpenCL-based API.");
+#endif
     return absl::OkStatus();
   }
 
