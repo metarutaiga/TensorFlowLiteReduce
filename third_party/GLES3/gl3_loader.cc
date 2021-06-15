@@ -8,8 +8,7 @@
 **   https://github.com/KhronosGroup/OpenGL-Registry
 */
 
-#include <windows.h>
-
+#include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
@@ -22,7 +21,7 @@ extern "C" type GL_APIENTRY prototype parameter \
 } \
 static type GL_APIENTRY prototype ## Trunk parameter \
 { \
-    (void*&)prototype ## Entry = GetProcAddress(LoadLibraryA("libGLESv2.dll"), #prototype); \
+    (void*&)prototype ## Entry = (void*)eglGetProcAddress(#prototype); \
     if (prototype ## Entry == nullptr) \
     { \
         prototype ## Entry = [] parameter -> type \
