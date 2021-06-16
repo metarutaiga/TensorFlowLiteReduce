@@ -35,7 +35,9 @@ limitations under the License.
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/internal/compatibility.h"
 #include "tensorflow/lite/model_builder.h"
+#if 0
 #include "tensorflow/lite/profiling/platform_profiler.h"
+#endif
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/schema/schema_utils.h"
 #include "tensorflow/lite/shared_library.h"
@@ -730,7 +732,9 @@ TfLiteStatus InterpreterBuilder::operator()(
     (*interpreter)->PreserveAllTensorsExperimental();
   }
 
+#if 0
   (*interpreter)->SetProfiler(tflite::profiling::MaybeCreatePlatformProfiler());
+#endif
 
   for (int subgraph_index = 0; subgraph_index < subgraphs->size();
        ++subgraph_index) {
