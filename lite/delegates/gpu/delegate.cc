@@ -314,8 +314,10 @@ class DelegateKernel {
         options, std::move(*graph), builder));
     TFLITE_LOG_PROD_ONCE(tflite::TFLITE_LOG_INFO,
                          "Initialized OpenCL-based API.");
-#endif
     return absl::OkStatus();
+#else
+    return absl::NotFoundError("OpenCL is disabled");
+#endif
   }
 
   absl::Status InitializeOpenGlApi(GraphFloat32* graph,
@@ -336,8 +338,10 @@ class DelegateKernel {
     enforce_same_thread_ = true;
     TFLITE_LOG_PROD_ONCE(tflite::TFLITE_LOG_INFO,
                          "Initialized OpenGL-based API.");
-#endif
     return absl::OkStatus();
+#else
+    return absl::NotFoundError("OpenGL is disabled");
+#endif
   }
 
   // The Delegate instance that's shared across all DelegateKernel instances.

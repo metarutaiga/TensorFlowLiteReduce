@@ -127,6 +127,8 @@ absl::Status EglEnvironment::InitPBufferContext() {
 }
 
 void EglEnvironment::ForceSyncTurning() {
+  int framebuffer;
+  glGetIntegerv(GL_FRAMEBUFFER_BINDING, &framebuffer);
   glGenFramebuffers(1, &dummy_framebuffer_);
   glBindFramebuffer(GL_FRAMEBUFFER, dummy_framebuffer_);
 
@@ -141,6 +143,7 @@ void EglEnvironment::ForceSyncTurning() {
 
   glViewport(0, 0, 4, 4);
   glClear(GL_COLOR_BUFFER_BIT);
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 }
 
 }  // namespace gl
