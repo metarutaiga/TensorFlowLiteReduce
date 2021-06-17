@@ -31,8 +31,8 @@ void MinimalLogger::LogFormatted(LogSeverity severity, const char* format,
   int index = 0;
   index += snprintf(buffer + index, size - index, "%s: ", GetSeverityName(severity));
   index += vsnprintf(buffer + index, size - index, format, args);
-  index += snprintf(buffer + index, size - index, "\n");
   OutputDebugStringA(buffer);
+  OutputDebugStringA("\n");
 }
 
 }  // namespace logging_internal

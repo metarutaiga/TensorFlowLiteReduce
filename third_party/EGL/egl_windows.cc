@@ -86,7 +86,8 @@ EGLBoolean EGLAPIENTRY eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *mino
 
 EGLBoolean EGLAPIENTRY eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config)
 {
-    (*configs) = 0;
+    (*num_config) = 1;
+    configs[0] = 0;
     return EGL_TRUE;
 }
 
@@ -149,6 +150,10 @@ EGLContext EGLAPIENTRY eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLCon
 
 EGLBoolean EGLAPIENTRY eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
 {
+    wglMakeCurrent(nullptr, nullptr);
+    HWND window = WindowFromDC((HDC)dpy);
+    ReleaseDC(window, (HDC)dpy);
+    CloseWindow(window);
     return wglDeleteContext((HGLRC)ctx) ? EGL_TRUE : EGL_FALSE;
 }
 
@@ -166,16 +171,10 @@ EGLDisplay EGLAPIENTRY eglGetDisplay(EGLNativeDisplayType display_id)
 {
     if (display_id == EGL_DEFAULT_DISPLAY)
     {
-        static HWND window = nullptr;
-        static HDC dc = nullptr;
-        if (window == nullptr)
-        {
-            WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_OWNDC, ::DefWindowProcA, 0, 0, ::GetModuleHandleA(nullptr), nullptr, nullptr, nullptr, nullptr, "OpenGL", nullptr };
-            ::RegisterClassExA(&wc);
-            window = ::CreateWindowA(wc.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW, 0, 0, 1, 1, nullptr, nullptr, wc.hInstance, nullptr);
-            dc = GetDC(window);
-        }
-        return dc;
+        WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_OWNDC, ::DefWindowProcA, 0, 0, ::GetModuleHandleA(nullptr), nullptr, nullptr, nullptr, nullptr, "OpenGL", nullptr };
+        ::RegisterClassExA(&wc);
+        HWND window = ::CreateWindowA(wc.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW, 0, 0, 1, 1, nullptr, nullptr, wc.hInstance, nullptr);
+        return GetDC(window);
     }
     return (EGLDisplay)display_id;
 }
