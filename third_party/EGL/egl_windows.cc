@@ -11,6 +11,7 @@
 */
 
 #define _GDI32_
+#include <stdlib.h>
 #include <windows.h>
 #include <EGL/egl.h>
 
@@ -43,26 +44,58 @@ WGL_PROTOTYPE(PROC, wglGetProcAddress, (LPCSTR name), name);
 WGL_PROTOTYPE(BOOL, wglMakeCurrent, (HDC dc, HGLRC glrc), dc, glrc);
 WGL_PROTOTYPE(BOOL, wglShareLists, (HGLRC share, HGLRC glrc), share, glrc);
 
-EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
+void (WINAPI* glShaderSourceDesktop)(int shader, int count, const char* const* string, const int* length);
+void WINAPI glShaderSourceMobile(int shader, int count, const char* const* string, const int* length)
 {
+    char** replace_string = new char* [count];
+    for (int i = 0; i < count; ++i)
+    {
+        char* replace = strdup(string[i]);
+        char* line = strstr(replace, "#version 310 es");
+        if (line)
+        {
+            memcpy(line, "#version 430   ", sizeof("#version 430   ") - 1);
+        }
+        replace_string[i] = line;
+    }
+    glShaderSourceDesktop(shader, count, replace_string, length);
+    for (int i = 0; i < count; ++i)
+    {
+        free(replace_string[i]);
+    }
+    delete[] replace_string;
+}
+
+EGLBoolean EGLAPIENTRY eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
+{
+    static const PIXELFORMATDESCRIPTOR desc =
+    {
+        .nSize = sizeof(PIXELFORMATDESCRIPTOR),
+        .nVersion = 1,
+        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+    };
+    SetPixelFormat((HDC)dpy, ChoosePixelFormat((HDC)dpy, &desc), &desc);
+    HGLRC ctx = wglCreateContext((HDC)dpy);
+    wglMakeCurrent((HDC)dpy, ctx);
     if (major)
         (*major) = 1;
     if (minor)
-        (*major) = 5;
+        (*minor) = 5;
     return EGL_TRUE;
 }
 
-EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config)
+EGLBoolean EGLAPIENTRY eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config)
+{
+    (*configs) = 0;
+    return EGL_TRUE;
+}
+
+EGLBoolean EGLAPIENTRY eglBindAPI(EGLenum api)
 {
     return EGL_TRUE;
 }
 
-EGLBoolean eglBindAPI(EGLenum api)
-{
-    return EGL_TRUE;
-}
-
-const char *eglQueryString(EGLDisplay dpy, EGLint name)
+const char * EGLAPIENTRY eglQueryString(EGLDisplay dpy, EGLint name)
 {
     switch (name)
     {
@@ -77,45 +110,59 @@ const char *eglQueryString(EGLDisplay dpy, EGLint name)
     }
 }
 
-EGLint eglGetError(void)
+EGLint EGLAPIENTRY eglGetError(void)
 {
-    return 0;
+    return EGL_SUCCESS;
 }
 
-__eglMustCastToProperFunctionPointerType eglGetProcAddress(const char *procname)
+__eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddress(const char *procname)
 {
-    return (__eglMustCastToProperFunctionPointerType)wglGetProcAddress(procname);
+    PROC proc = wglGetProcAddress(procname);
+    if (proc == nullptr)
+    {
+        proc = (PROC)GetProcAddress(GetModuleHandleA("OpenGL32.dll"), procname);
+    }
+#if 0
+    if (proc == nullptr)
+    {
+        OutputDebugStringA(procname);
+        OutputDebugStringA("\n");
+    }
+#endif
+    if (proc && strcmp(procname, "glShaderSource") == 0)
+    {
+        (PROC&)glShaderSourceDesktop = proc;
+        proc = (PROC)glShaderSourceMobile;
+    }
+    return (__eglMustCastToProperFunctionPointerType)proc;
 }
 
-EGLContext eglGetCurrentContext(void)
+EGLContext EGLAPIENTRY eglGetCurrentContext(void)
 {
-    return wglGetCurrentContext();
+    return (EGLContext)wglGetCurrentContext();
 }
 
-EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list)
+EGLContext EGLAPIENTRY eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list)
 {
-    HGLRC ctx = wglCreateContext((HDC)dpy);
-    if (ctx && share_context)
-        wglShareLists((HGLRC)share_context, ctx);
-    return ctx;
+    return (EGLContext)wglGetCurrentContext();
 }
 
-EGLBoolean eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
+EGLBoolean EGLAPIENTRY eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
 {
     return wglDeleteContext((HGLRC)ctx) ? EGL_TRUE : EGL_FALSE;
 }
 
-EGLBoolean eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx)
+EGLBoolean EGLAPIENTRY eglMakeCurrent(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx)
 {
     return wglMakeCurrent((HDC)dpy, (HGLRC)ctx);
 }
 
-EGLDisplay eglGetCurrentDisplay(void)
+EGLDisplay EGLAPIENTRY eglGetCurrentDisplay(void)
 {
     return (EGLDisplay)wglGetCurrentDC();
 }
 
-EGLDisplay eglGetDisplay(EGLNativeDisplayType display_id)
+EGLDisplay EGLAPIENTRY eglGetDisplay(EGLNativeDisplayType display_id)
 {
     if (display_id == EGL_DEFAULT_DISPLAY)
     {
@@ -133,19 +180,12 @@ EGLDisplay eglGetDisplay(EGLNativeDisplayType display_id)
     return (EGLDisplay)display_id;
 }
 
-EGLSurface eglCreatePbufferSurface(EGLDisplay dpy, EGLConfig config, const EGLint *attrib_list)
+EGLSurface EGLAPIENTRY eglCreatePbufferSurface(EGLDisplay dpy, EGLConfig config, const EGLint *attrib_list)
 {
-    static const PIXELFORMATDESCRIPTOR desc =
-    {
-        .nSize = sizeof(PIXELFORMATDESCRIPTOR),
-        .nVersion = 1,
-        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-    };
-    SetPixelFormat((HDC)dpy, ChoosePixelFormat((HDC)dpy, &desc), &desc);
     return (EGLSurface)dpy;
 }
 
-EGLBoolean eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
+EGLBoolean EGLAPIENTRY eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
 {
     return EGL_TRUE;
 }
