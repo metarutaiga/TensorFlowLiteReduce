@@ -77,7 +77,8 @@ EGLBoolean EGLAPIENTRY eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *mino
         .nVersion = 1,
         .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
     };
-    SetPixelFormat((HDC)dpy, ChoosePixelFormat((HDC)dpy, &desc), &desc);
+    int format = ChoosePixelFormat((HDC)dpy, &desc);
+    SetPixelFormat((HDC)dpy, format, &desc);
     HGLRC ctx = wglCreateContext((HDC)dpy);
     wglMakeCurrent((HDC)dpy, ctx);
     if (major)
