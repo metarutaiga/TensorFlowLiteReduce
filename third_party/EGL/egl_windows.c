@@ -6,48 +6,51 @@
 ** The current version of the Registry, generator scripts
 ** used to make the header, and the header can be found at
 **   http://www.khronos.org/registry/egl
-**
-** Khronos $Git commit SHA1: 59522adade $ on $Git commit date: 2021-02-02 11:09:11 -0700 $
 */
+
+#pragma clang diagnostic ignored "-Wgnu-folding-constant"
+#pragma clang diagnostic ignored "-Wmicrosoft-anon-tag"
 
 #define _GDI32_
 #include <stdlib.h>
 #include <windows.h>
 #include <EGL/egl.h>
 
+static HMODULE opengl32_dll = NULL;
+
 #define WGL_PROTOTYPE(type, prototype, parameter, ...) \
-extern type (WINAPI* prototype ## Entry) parameter; \
-extern "C" type WINAPI prototype parameter \
+static type (WINAPI* prototype ## Entry) parameter; \
+extern type WINAPI prototype parameter \
 { \
     return prototype ## Entry(__VA_ARGS__); \
+} \
+static void* WINAPI prototype ## Dummy parameter \
+{ \
+    return NULL; \
 } \
 static type WINAPI prototype ## Trunk parameter \
 { \
-    (void*&)prototype ## Entry = GetProcAddress(LoadLibraryA("OpenGL32.dll"), #prototype); \
-    if (prototype ## Entry == nullptr) \
-    { \
-        prototype ## Entry = [] parameter -> type \
-        { \
-            typedef type returnType; \
-            return returnType(); \
-        }; \
-    } \
+    if (opengl32_dll == NULL) \
+        opengl32_dll = LoadLibraryA("OpenGL32.dll"); \
+    prototype ## Entry = (type (WINAPI*) parameter)GetProcAddress(opengl32_dll, #prototype); \
+    if (prototype ## Entry == NULL) \
+        prototype ## Entry = (type (WINAPI*) parameter)prototype ## Dummy; \
     return prototype ## Entry(__VA_ARGS__); \
 } \
-type (WINAPI* prototype ## Entry) parameter = prototype ## Trunk;
+static type (WINAPI* prototype ## Entry) parameter = prototype ## Trunk;
 
-WGL_PROTOTYPE(HGLRC, wglCreateContext, (HDC dc), dc);
-WGL_PROTOTYPE(BOOL, wglDeleteContext, (HGLRC glrc), glrc);
-WGL_PROTOTYPE(HGLRC, wglGetCurrentContext, (VOID));
-WGL_PROTOTYPE(HDC, wglGetCurrentDC, (VOID));
-WGL_PROTOTYPE(PROC, wglGetProcAddress, (LPCSTR name), name);
-WGL_PROTOTYPE(BOOL, wglMakeCurrent, (HDC dc, HGLRC glrc), dc, glrc);
-WGL_PROTOTYPE(BOOL, wglShareLists, (HGLRC share, HGLRC glrc), share, glrc);
+WGL_PROTOTYPE(HGLRC, wglCreateContext, (HDC hDc), hDc);
+WGL_PROTOTYPE(BOOL, wglDeleteContext, (HGLRC oldContext), oldContext);
+WGL_PROTOTYPE(HGLRC, wglGetCurrentContext, (void));
+WGL_PROTOTYPE(HDC, wglGetCurrentDC, (void));
+WGL_PROTOTYPE(PROC, wglGetProcAddress, (LPCSTR lpszProc), lpszProc);
+WGL_PROTOTYPE(BOOL, wglMakeCurrent, (HDC hDc, HGLRC newContext), hDc, newContext);
+WGL_PROTOTYPE(BOOL, wglShareLists, (HGLRC hrcSrvShare, HGLRC hrcSrvSource), hrcSrvShare, hrcSrvSource);
 
-void (WINAPI* glShaderSourceDesktop)(int shader, int count, const char* const* string, const int* length);
-void WINAPI glShaderSourceMobile(int shader, int count, const char* const* string, const int* length)
+void (WINAPI* glShaderSourceDesktop)(int shader, int count, char* const* string, const int* length);
+void WINAPI glShaderSourceMobile(int shader, int count, char* const* string, const int* length)
 {
-    char** replace_string = new char* [count];
+    char** replace_string = malloc(sizeof(char*) * count);
     for (int i = 0; i < count; ++i)
     {
         char* replace = strdup(string[i]);
@@ -63,7 +66,7 @@ void WINAPI glShaderSourceMobile(int shader, int count, const char* const* strin
     {
         free(replace_string[i]);
     }
-    delete[] replace_string;
+    free(replace_string);
 }
 
 EGLBoolean EGLAPIENTRY eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
@@ -86,8 +89,10 @@ EGLBoolean EGLAPIENTRY eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *mino
 
 EGLBoolean EGLAPIENTRY eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config)
 {
-    (*num_config) = 1;
-    configs[0] = 0;
+    if (num_config)
+        (*num_config) = 1;
+    if (configs)
+        configs[0] = 0;
     return EGL_TRUE;
 }
 
@@ -103,7 +108,7 @@ const char * EGLAPIENTRY eglQueryString(EGLDisplay dpy, EGLint name)
     case EGL_CLIENT_APIS:
         return "OpenGL_ES";
     case EGL_VENDOR:
-        return "TensorFlow";
+        return "Microsoft";
     case EGL_VERSION:
         return "1.5";
     default:
@@ -119,20 +124,13 @@ EGLint EGLAPIENTRY eglGetError(void)
 __eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddress(const char *procname)
 {
     PROC proc = wglGetProcAddress(procname);
-    if (proc == nullptr)
+    if (proc == NULL)
     {
-        proc = (PROC)GetProcAddress(GetModuleHandleA("OpenGL32.dll"), procname);
+        proc = (PROC)GetProcAddress(opengl32_dll, procname);
     }
-#if 0
-    if (proc == nullptr)
-    {
-        OutputDebugStringA(procname);
-        OutputDebugStringA("\n");
-    }
-#endif
     if (proc && strcmp(procname, "glShaderSource") == 0)
     {
-        (PROC&)glShaderSourceDesktop = proc;
+        *(PROC*)&glShaderSourceDesktop = proc;
         proc = (PROC)glShaderSourceMobile;
     }
     return (__eglMustCastToProperFunctionPointerType)proc;
@@ -150,7 +148,7 @@ EGLContext EGLAPIENTRY eglCreateContext(EGLDisplay dpy, EGLConfig config, EGLCon
 
 EGLBoolean EGLAPIENTRY eglDestroyContext(EGLDisplay dpy, EGLContext ctx)
 {
-    wglMakeCurrent(nullptr, nullptr);
+    wglMakeCurrent(NULL, NULL);
     HWND window = WindowFromDC((HDC)dpy);
     ReleaseDC(window, (HDC)dpy);
     CloseWindow(window);
@@ -171,9 +169,16 @@ EGLDisplay EGLAPIENTRY eglGetDisplay(EGLNativeDisplayType display_id)
 {
     if (display_id == EGL_DEFAULT_DISPLAY)
     {
-        WNDCLASSEXA wc = { sizeof(WNDCLASSEXA), CS_OWNDC, ::DefWindowProcA, 0, 0, ::GetModuleHandleA(nullptr), nullptr, nullptr, nullptr, nullptr, "OpenGL", nullptr };
-        ::RegisterClassExA(&wc);
-        HWND window = ::CreateWindowA(wc.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW, 0, 0, 1, 1, nullptr, nullptr, wc.hInstance, nullptr);
+        WNDCLASSEXA wc =
+        {
+            .cbSize = sizeof(WNDCLASSEXA),
+            .style = CS_OWNDC,
+            .lpfnWndProc = DefWindowProcA,
+            .hInstance = GetModuleHandleA(NULL),
+            .lpszClassName = "EGL",
+        };
+        RegisterClassExA(&wc);
+        HWND window = CreateWindowA(wc.lpszClassName, "EGL", WS_OVERLAPPEDWINDOW, 0, 0, 1, 1, NULL, NULL, wc.hInstance, NULL);
         return GetDC(window);
     }
     return (EGLDisplay)display_id;

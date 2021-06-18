@@ -8,31 +8,32 @@
 **   https://github.com/KhronosGroup/OpenGL-Registry
 */
 
+#pragma clang diagnostic ignored "-Wgnu-folding-constant"
+#pragma clang diagnostic ignored "-Wmicrosoft-anon-tag"
+
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include <GLES3/gl31.h>
 #include <GLES3/gl32.h>
 
 #define GL_PROTOTYPE(type, prototype, parameter, ...) \
-extern type (GL_APIENTRYP prototype ## Entry) parameter; \
-extern "C" type GL_APIENTRY prototype parameter \
+static type (GL_APIENTRYP prototype ## Entry) parameter; \
+extern type GL_APIENTRY prototype parameter \
 { \
     return prototype ## Entry(__VA_ARGS__); \
+} \
+static void* GL_APIENTRY prototype ## Dummy parameter \
+{ \
+    return NULL; \
 } \
 static type GL_APIENTRY prototype ## Trunk parameter \
 { \
-    (void*&)prototype ## Entry = (void*)eglGetProcAddress(#prototype); \
-    if (prototype ## Entry == nullptr) \
-    { \
-        prototype ## Entry = [] parameter -> type \
-        { \
-            typedef type returnType; \
-            return returnType(); \
-        }; \
-    } \
+    prototype ## Entry = (type (GL_APIENTRYP) parameter)eglGetProcAddress(#prototype); \
+    if (prototype ## Entry == NULL) \
+        prototype ## Entry = (type (GL_APIENTRYP) parameter)prototype ## Dummy; \
     return prototype ## Entry(__VA_ARGS__); \
 } \
-type (GL_APIENTRYP prototype ## Entry) parameter = prototype ## Trunk;
+static type (GL_APIENTRYP prototype ## Entry) parameter = prototype ## Trunk;
 
 #if GL_ES_VERSION_2_0
 GL_PROTOTYPE(void, glActiveTexture, (GLenum texture), texture);
