@@ -16,6 +16,11 @@
 #include <windows.h>
 #include <EGL/egl.h>
 
+#define CreateWindowIndirectExA(c) CreateWindowExA((c)->dwExStyle, \
+    (c)->lpszClass, (c)->lpszName, (c)->style, (c)->x, (c)->y,     \
+    (c)->cx, (c)->cy, (c)->hwndParent, (c)->hMenu, (c)->hInstance, \
+    (c)->lpCreateParams)
+
 static HMODULE opengl32_dll = NULL;
 
 #define WGL_PROTOTYPE(type, prototype, parameter, ...) \
@@ -47,15 +52,21 @@ WGL_PROTOTYPE(PROC, wglGetProcAddress, (LPCSTR lpszProc), lpszProc);
 WGL_PROTOTYPE(BOOL, wglMakeCurrent, (HDC hDc, HGLRC newContext), hDc, newContext);
 WGL_PROTOTYPE(BOOL, wglShareLists, (HGLRC hrcSrvShare, HGLRC hrcSrvSource), hrcSrvShare, hrcSrvSource);
 
-void (WINAPI* glShaderSourceDesktop)(int shader, int count, char* const* string, const int* length);
-void WINAPI glShaderSourceMobile(int shader, int count, char* const* string, const int* length)
+static void (WINAPI* glShaderSourceDesktop)(int shader, int count, char* const* string, const int* length);
+static void WINAPI glShaderSourceMobile(int shader, int count, char* const* string, const int* length)
 {
     char** replace_string = malloc(sizeof(char*) * count);
     for (int i = 0; i < count; ++i)
     {
         char* replace = strdup(string[i]);
-        char* line = strstr(replace, "#version 310 es");
-        if (line)
+        char* line;
+        if ((line = strstr(replace, "#version 100")))
+        {
+            memcpy(line, "#version 120", sizeof("#version 120") - 1);
+        }
+        if ((line = strstr(replace, "#version 300 es")) ||
+            (line = strstr(replace, "#version 310 es")) ||
+            (line = strstr(replace, "#version 320 es")))
         {
             memcpy(line, "#version 430   ", sizeof("#version 430   ") - 1);
         }
@@ -82,18 +93,26 @@ EGLBoolean EGLAPIENTRY eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *mino
     HGLRC ctx = wglCreateContext((HDC)dpy);
     wglMakeCurrent((HDC)dpy, ctx);
     if (major)
+    {
         (*major) = 1;
+    }
     if (minor)
+    {
         (*minor) = 5;
+    }
     return EGL_TRUE;
 }
 
 EGLBoolean EGLAPIENTRY eglChooseConfig(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config)
 {
     if (num_config)
+    {
         (*num_config) = 1;
+    }
     if (configs)
+    {
         configs[0] = 0;
+    }
     return EGL_TRUE;
 }
 
@@ -109,9 +128,9 @@ const char * EGLAPIENTRY eglQueryString(EGLDisplay dpy, EGLint name)
     case EGL_CLIENT_APIS:
         return "OpenGL_ES";
     case EGL_VENDOR:
-        return "Microsoft";
+        return "Windows";
     case EGL_VERSION:
-        return "1.5";
+        return "1.5 Windows META-EGL";
     default:
         return "";
     }
@@ -125,13 +144,21 @@ EGLint EGLAPIENTRY eglGetError(void)
 __eglMustCastToProperFunctionPointerType EGLAPIENTRY eglGetProcAddress(const char *procname)
 {
     PROC proc = wglGetProcAddress(procname);
+    if (proc == NULL && strcmp(procname, "glClearDepthf") == 0 && (procname = "glClearDepth"))
+    {
+        proc = wglGetProcAddress(procname);
+    }
+    if (proc == NULL && strcmp(procname, "glDepthRangef") == 0 && (procname = "glDepthRange"))
+    {
+        proc = wglGetProcAddress(procname);
+    }
     if (proc == NULL)
     {
         proc = (PROC)GetProcAddress(opengl32_dll, procname);
     }
     if (proc && strcmp(procname, "glShaderSource") == 0)
     {
-        *(PROC*)&glShaderSourceDesktop = proc;
+        glShaderSourceDesktop = (void (WINAPI*)(int, int, char* const*, const int*))proc;
         proc = (PROC)glShaderSourceMobile;
     }
     return (__eglMustCastToProperFunctionPointerType)proc;
@@ -168,21 +195,30 @@ EGLDisplay EGLAPIENTRY eglGetCurrentDisplay(void)
 
 EGLDisplay EGLAPIENTRY eglGetDisplay(EGLNativeDisplayType display_id)
 {
-    if (display_id == EGL_DEFAULT_DISPLAY)
+    if (display_id != EGL_DEFAULT_DISPLAY)
     {
-        WNDCLASSEXA wc =
-        {
-            .cbSize = sizeof(WNDCLASSEXA),
-            .style = CS_OWNDC,
-            .lpfnWndProc = DefWindowProcA,
-            .hInstance = GetModuleHandleA(NULL),
-            .lpszClassName = "EGL",
-        };
-        RegisterClassExA(&wc);
-        HWND window = CreateWindowA(wc.lpszClassName, "EGL", WS_OVERLAPPEDWINDOW, 0, 0, 1, 1, NULL, NULL, wc.hInstance, NULL);
-        return GetDC(window);
+        return (EGLDisplay)display_id;
     }
-    return (EGLDisplay)display_id;
+    WNDCLASSEXA wc =
+    {
+        .cbSize = sizeof(WNDCLASSEXA),
+        .style = CS_OWNDC,
+        .lpfnWndProc = DefWindowProcA,
+        .hInstance = GetModuleHandleA(NULL),
+        .lpszClassName = "EGL",
+    };
+    CREATESTRUCTA cs =
+    {
+        .hInstance = wc.hInstance,
+        .cy = 1,
+        .cx = 1,
+        .style = WS_OVERLAPPEDWINDOW,
+        .lpszName = wc.lpszClassName,
+        .lpszClass = wc.lpszClassName,
+    };
+    RegisterClassExA(&wc);
+    HWND window = CreateWindowIndirectExA(&cs);
+    return GetDC(window);
 }
 
 EGLSurface EGLAPIENTRY eglCreatePbufferSurface(EGLDisplay dpy, EGLConfig config, const EGLint *attrib_list)
